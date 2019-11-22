@@ -107,6 +107,9 @@ def sum_time(events):
     """Given a list of events, sum the time taken for all of them."""
     total_time = datetime.timedelta()
     for event in events:
+        if "dateTime" not in event["start"] or "dateTime" not in event["end"]:
+            logging.info("Skipping event {}.".format(event["summary"]))
+            continue
         startTime = iso8601.parse_date(event["start"]["dateTime"])
         endTime = iso8601.parse_date(event["end"]["dateTime"])
         duration = endTime - startTime
@@ -128,8 +131,16 @@ def main(argv):
         truncated_name = "{:.15}".format(name)
         events = get_events(service, meta, now)
         total_time = sum_time(events)
+        meta["_total_time"] = total_time
+        # fraction = total_time / 156.0 * 100
+        # print("  {:15}:\t{:5.2f} h / {:4.1f} %".format(truncated_name, total_time, fraction))
+    for name, meta in sorted(calendars_meta.items(), key=lambda x:x[1]["_total_time"], reverse=True):
+        truncated_name = "{:.15}".format(name)
+        total_time = meta["_total_time"]
         fraction = total_time / 156.0 * 100
         print("  {:15}:\t{:5.2f} h / {:4.1f} %".format(truncated_name, total_time, fraction))
+
+
 
 if __name__ == '__main__':
     app.run(main)
